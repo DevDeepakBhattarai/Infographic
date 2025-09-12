@@ -2,7 +2,11 @@
   "name": "@antv/infographic-jsx",
   "version": "0.0.1",
   "description": "JSX runtime for AntV Infographic",
-  "keywords": [],
+  "keywords": [
+    "antv",
+    "infographic",
+    "jsx"
+  ],
   "license": "MIT",
   "author": "Aarebecca",
   "type": "module",
@@ -25,7 +29,7 @@
   "types": "./dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "t": "tsx ./src/test.tsx",
+    "ci": "run-s test build",
     "test": "vitest --run",
     "watch": "tsc -w"
   },
