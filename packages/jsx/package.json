@@ -29,7 +29,8 @@
   "types": "./dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "ci": "run-s test build",
+    "ci": "run-s lint test build",
+    "lint": "eslint . --ext .ts,.tsx && tsc --noEmit -p __tests__",
     "test": "vitest --run --coverage",
     "watch": "tsc -w"
   },
