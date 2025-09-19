@@ -5,7 +5,7 @@ import type { BaseItemProps } from '../items';
 
 export interface BaseStructureProps {
   Title?: ComponentType<Pick<TitleProps, 'title' | 'desc'>>;
-  Item: ComponentType<BaseItemProps>;
+  Item: ComponentType<Omit<BaseItemProps, 'themeColors'>>; // themeColors will be injected
   data: Data;
 }
 

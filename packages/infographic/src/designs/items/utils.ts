@@ -18,12 +18,27 @@ export function getItemProps<T extends BaseItemProps>(
   const rest: Record<string, any> = { ...props };
   const base: BaseItemProps = {} as any;
 
-  const keys = ['indexes', 'data', 'datum', 'positionH', 'positionV', ...ext];
+  const keys = [
+    'indexes',
+    'data',
+    'datum',
+    'positionH',
+    'positionV',
+    'themeColors',
+    ...ext,
+  ];
 
   keys.forEach((key) => {
     if (key in rest) {
       base[key] = rest[key];
       delete rest[key];
+    }
+  });
+
+  // keep x, y, width, height in rest
+  ['x', 'y', 'width', 'height'].forEach((key) => {
+    if (key in props) {
+      rest[key] = props[key];
     }
   });
 
