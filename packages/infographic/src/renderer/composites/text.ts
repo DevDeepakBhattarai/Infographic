@@ -1,5 +1,5 @@
 import type { Bounds } from '@antv/infographic-jsx';
-import get from 'lodash-es/get';
+import { get, kebabCase } from 'lodash-es';
 import { ParsedInfographicOptions } from '../../options';
 import type { DynamicAttributes } from '../../themes';
 import type { TextAttributes } from '../../types';
@@ -10,7 +10,6 @@ import {
   getItemIndexes,
   setAttributes,
 } from '../../utils';
-import { TextAlignment } from '../types';
 import { parseDynamicAttributes } from '../utils';
 
 export function renderText(
@@ -70,6 +69,13 @@ export function renderText(
     height,
   });
 
+  for (const key in textElement.dataset) {
+    renderedText.setAttribute(
+      `data-${kebabCase(key)}`,
+      textElement.dataset[key]!,
+    );
+  }
+
   renderedText.setAttribute('id', node.getAttribute('id')!);
   return renderedText;
 }
@@ -88,7 +94,6 @@ export function renderItemText(
   if (!textShape) return null;
   const { data, themeConfig, design } = options;
   const coloredArea = design.item?.options?.coloredArea || [];
-
   const indexes = getItemIndexes(node.id);
   const text = String(get(getDatumByIndexes(data, indexes), type, ''));
   const attrs = Object.assign(
@@ -103,7 +108,7 @@ export function renderItemText(
     attrs,
     assignPaletteColor,
   );
-  return renderText(node, text, staticAttrs);
+  return renderText(node, node.textContent || text, staticAttrs);
 }
 
 export function renderStaticText(
@@ -120,7 +125,6 @@ function layoutText(
   text: SVGTextElement,
   bounds: Bounds,
 ): SVGElement {
-  const [horizontal, vertical] = getTextAlignment(text);
   const { x, y, width, height } = bounds;
 
   const attributes = getTextAttributes(text);
@@ -129,8 +133,7 @@ function layoutText(
     y,
     width,
     height,
-    ['horizontal-align']: horizontal,
-    ['vertical-align']: vertical,
+    'text-alignment': get(text, 'dataset.textAlignment', 'CENTER CENTER'),
   });
 
   const element = createTextElement(textContent, attributes as any);
@@ -138,7 +141,7 @@ function layoutText(
 }
 
 function getTextAttributes(textElement: SVGTextElement) {
-  return getAttributes(textElement, [
+  const attrs: Record<string, any> = getAttributes(textElement, [
     'font-family',
     'font-size',
     'font-weight',
@@ -152,16 +155,6 @@ function getTextAttributes(textElement: SVGTextElement) {
     'text-anchor',
     'dominant-baseline',
   ]);
-}
 
-function getTextAlignment(textElement: SVGTextElement): TextAlignment {
-  const dataTextAlignment = textElement.getAttribute('data-text-alignment');
-
-  if (!dataTextAlignment) {
-    return ['CENTER', 'CENTER'];
-  }
-
-  const [horizontal = 'CENTER', vertical = 'CENTER'] =
-    dataTextAlignment.split(' ');
-  return [horizontal, vertical] as TextAlignment;
+  return attrs;
 }

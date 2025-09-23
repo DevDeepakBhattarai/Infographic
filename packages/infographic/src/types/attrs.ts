@@ -18,8 +18,7 @@ export type TextAttributes = {
   y?: number | string | undefined;
   width?: number | string | undefined;
   height?: number | string | undefined;
-  'horizontal-align'?: string | undefined;
-  'vertical-align'?: string | undefined;
+  'text-alignment'?: string | undefined;
   'font-family'?: string | undefined;
   'font-size'?: number | string | undefined;
   'font-weight'?: number | string | undefined;

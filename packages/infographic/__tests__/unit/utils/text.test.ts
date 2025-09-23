@@ -59,7 +59,7 @@ describe('text', () => {
       const leftAligned = createTextElement('Left', {
         width: '100',
         height: '30',
-        'horizontal-align': 'LEFT',
+        'text-alignment': 'LEFT CENTER',
       });
       const leftSpan = leftAligned.querySelector('span') as HTMLSpanElement;
       expect(leftSpan.style.textAlign).toBe('left');
@@ -68,7 +68,7 @@ describe('text', () => {
       const centerAligned = createTextElement('Center', {
         width: '100',
         height: '30',
-        'horizontal-align': 'CENTER',
+        'text-alignment': 'CENTER CENTER',
       });
       const centerSpan = centerAligned.querySelector('span') as HTMLSpanElement;
       expect(centerSpan.style.textAlign).toBe('center');
@@ -77,7 +77,7 @@ describe('text', () => {
       const rightAligned = createTextElement('Right', {
         width: '100',
         height: '30',
-        'horizontal-align': 'RIGHT',
+        'text-alignment': 'RIGHT CENTER',
       });
       const rightSpan = rightAligned.querySelector('span') as HTMLSpanElement;
       expect(rightSpan.style.textAlign).toBe('right');
@@ -88,7 +88,7 @@ describe('text', () => {
       const topAligned = createTextElement('Top', {
         width: '100',
         height: '30',
-        'vertical-align': 'TOP',
+        'text-alignment': 'CENTER TOP',
       });
       const topSpan = topAligned.querySelector('span') as HTMLSpanElement;
       expect(topSpan.style.alignContent).toBe('flex-start');
@@ -97,7 +97,7 @@ describe('text', () => {
       const centerAligned = createTextElement('Center', {
         width: '100',
         height: '30',
-        'vertical-align': 'CENTER',
+        'text-alignment': 'CENTER CENTER',
       });
       const centerSpan = centerAligned.querySelector('span') as HTMLSpanElement;
       expect(centerSpan.style.alignContent).toBe('center');
@@ -106,7 +106,7 @@ describe('text', () => {
       const bottomAligned = createTextElement('Bottom', {
         width: '100',
         height: '30',
-        'vertical-align': 'BOTTOM',
+        'text-alignment': 'CENTER BOTTOM',
       });
       const bottomSpan = bottomAligned.querySelector('span') as HTMLSpanElement;
       expect(bottomSpan.style.alignContent).toBe('flex-end');
