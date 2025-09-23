@@ -1,5 +1,5 @@
 import { getItemKeyFromIndexes } from '../../utils';
-import { BaseItemProps } from './types';
+import type { BaseItemProps } from './types';
 
 export function getItemId(indexes: number[], appendix: string) {
   return `item-${getItemKeyFromIndexes(indexes)}-${appendix}`;
@@ -8,15 +8,15 @@ export function getItemId(indexes: number[], appendix: string) {
 /**
  * 从属性中拆分出组件属性和容器属性
  * @param props
- * @param ext
+ * @param extKeys
  * @returns
  */
 export function getItemProps<T extends BaseItemProps>(
   props: T,
-  ext: string[] = [],
+  extKeys: string[] = [],
 ) {
-  const rest: Record<string, any> = { ...props };
-  const base: BaseItemProps = {} as any;
+  const restProps: Record<string, any> = { ...props };
+  const extProps: T = {} as any;
 
   const keys = [
     'indexes',
@@ -25,22 +25,22 @@ export function getItemProps<T extends BaseItemProps>(
     'positionH',
     'positionV',
     'themeColors',
-    ...ext,
+    ...extKeys,
   ];
 
   keys.forEach((key) => {
-    if (key in rest) {
-      base[key] = rest[key];
-      delete rest[key];
+    if (key in restProps) {
+      extProps[key as keyof T] = restProps[key];
+      delete restProps[key];
     }
   });
 
   // keep x, y, width, height in rest
   ['x', 'y', 'width', 'height'].forEach((key) => {
     if (key in props) {
-      rest[key] = props[key];
+      restProps[key] = props[key];
     }
   });
 
-  return [base, rest] as const;
+  return [extProps, restProps] as const;
 }

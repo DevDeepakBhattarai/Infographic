@@ -8,6 +8,7 @@ export interface BaseGeometryProps
   y?: number;
   width?: number;
   height?: number;
+  [key: `data-${string}`]: any;
 }
 
 export interface FragmentProps {

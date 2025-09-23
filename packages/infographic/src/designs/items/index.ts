@@ -1,3 +1,4 @@
+export * from './ChartColumn';
 export * from './DoneList';
 export * from './Pyramid';
 export * from './registry';
