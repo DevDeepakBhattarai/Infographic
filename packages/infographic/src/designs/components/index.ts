@@ -5,4 +5,5 @@ export * from './ItemDesc';
 export * from './ItemIcon';
 export * from './ItemLabel';
 export * from './ItemsGroup';
+export * from './ItemValue';
 export * from './Title';
