@@ -1,6 +1,7 @@
 /** @jsxImportSource @antv/infographic-jsx */
 import type { ComponentType, JSXElement } from '@antv/infographic-jsx';
 import {
+  Defs,
   Ellipse,
   getElementBounds,
   Group,
@@ -62,14 +63,22 @@ export const SequenceHorizontalZigzag: ComponentType<
     }
     const indexes = [index];
 
+    const itemColor = getPaletteColor(options, indexes) || colorPrimary;
+
     if (isEven) {
+      // Use item color with opacity for background
+      const backgroundColor =
+        itemColor === colorPrimary
+          ? themeColors.colorPrimaryBg || '#E8F3FF'
+          : `${itemColor}20`; // 20 = ~12% opacity in hex
+
       const cardBackground = (
         <Rect
           x={cardX}
           y={cardY}
           width={cardWidth}
           height={cardHeight}
-          fill={themeColors.colorPrimaryBg || '#E8F3FF'}
+          fill={backgroundColor}
           rx={20}
           ry={20}
         />
@@ -93,7 +102,6 @@ export const SequenceHorizontalZigzag: ComponentType<
     const dotsStartX = cardX + (cardWidth - totalDotsWidth) / 2;
     const dotsY = cardY + itemBounds.height + 20;
 
-    const itemColor = getPaletteColor(options, indexes) || colorPrimary;
     for (let i = 0; i < items.length; i++) {
       const dotX = dotsStartX + i * (dotSize + dotGap);
       const isCurrent = i === index;
@@ -204,15 +212,44 @@ export const SequenceHorizontalZigzag: ComponentType<
 
     const pathD = pathSegments.join(' ');
 
+    // Create gradient for the path with stops for each item
+    const linearGradientId = 'gradient-zigzag-path';
+    const firstColor = getPaletteColor(options, [0]) || colorPrimary;
+    const lastColor =
+      getPaletteColor(options, [items.length - 1]) || colorPrimary;
+
+    // Generate gradient stops for each item
+    const gradientStops = items.map((_, index) => {
+      const offset = (index / (items.length - 1)) * 100;
+      const color = getPaletteColor(options, [index]) || colorPrimary;
+      return <stop offset={`${offset}%`} stopColor={color} />;
+    });
+
     decorElements.unshift(
-      <Path
-        d={pathD}
-        stroke={colorPrimary}
-        strokeWidth={2}
-        fill="none"
-        width={(items.length - 1) * (cardWidth + gap) + cardWidth + padding * 2}
-        height={cardHeight + 120}
-      />,
+      <>
+        <Defs>
+          <linearGradient
+            id={linearGradientId}
+            x1={startX}
+            y1={startY}
+            x2={endX}
+            y2={endY}
+            gradientUnits="userSpaceOnUse"
+          >
+            {gradientStops}
+          </linearGradient>
+        </Defs>
+        <Path
+          d={pathD}
+          stroke={`url(#${linearGradientId})`}
+          strokeWidth={2}
+          fill="none"
+          width={
+            (items.length - 1) * (cardWidth + gap) + cardWidth + padding * 2
+          }
+          height={cardHeight + 120}
+        />
+      </>,
     );
 
     decorElements.unshift(
@@ -222,7 +259,7 @@ export const SequenceHorizontalZigzag: ComponentType<
         width={circleRadius * 2}
         height={circleRadius * 2}
         fill="transparent"
-        stroke={colorPrimary}
+        stroke={firstColor}
         strokeWidth={2}
       />,
     );
@@ -234,7 +271,7 @@ export const SequenceHorizontalZigzag: ComponentType<
         width={circleRadius * 2}
         height={circleRadius * 2}
         fill="transparent"
-        stroke={colorPrimary}
+        stroke={lastColor}
         strokeWidth={2}
       />,
     );

@@ -59,13 +59,7 @@ export const SequenceTimeline: ComponentType<SequenceTimelineProps> = (
       const nodeY = index * (itemBounds.height + gap) + itemBounds.height / 2;
       const offset = ((nodeY - firstNodeY) / totalHeight) * 100;
       const color = getPaletteColor(options, [index]);
-      return (
-        <stop
-          key={index}
-          offset={`${offset}%`}
-          stopColor={color || colorPrimary}
-        />
-      );
+      return <stop offset={`${offset}%`} stopColor={color || colorPrimary} />;
     });
 
     decorElements.push(
