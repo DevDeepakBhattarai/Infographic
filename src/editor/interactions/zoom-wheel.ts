@@ -8,6 +8,11 @@ import { Interaction } from './base';
 const MIN_VIEWBOX_SIZE = 1;
 const MIN_PADDING = -5000;
 const MAX_PADDING = 5000;
+const ZOOM_IN_FACTOR = 1.1;
+const ZOOM_OUT_FACTOR = 0.9;
+// Initial padding value when current padding is 0
+// This allows zooming to start from a reasonable base value
+const INITIAL_PADDING_WHEN_ZERO = 10;
 
 export class ZoomWheel extends Interaction implements IInteraction {
   name = 'zoom-wheel';
@@ -15,9 +20,12 @@ export class ZoomWheel extends Interaction implements IInteraction {
   private wheelListener = (event: WheelEvent) => {
     if (!this.interaction.isActive()) return;
     if (!event.ctrlKey && !event.metaKey) return;
+    // Ignore events with zero deltaY (no actual scrolling)
+    if (event.deltaY === 0) return;
     event.preventDefault();
 
-    const factor = event.deltaY > 0 ? 1.1 : 0.9;
+    const isZoomIn = event.deltaY > 0;
+    const factor = isZoomIn ? ZOOM_IN_FACTOR : ZOOM_OUT_FACTOR;
     const current = this.state.getOptions();
     const currentPadding = current.padding ?? 0;
     const parsed = parsePadding(currentPadding);
@@ -25,8 +33,17 @@ export class ZoomWheel extends Interaction implements IInteraction {
     const bbox = svg.getBBox();
 
     const scaled = parsed.map((value) => {
-      const base = value === 0 ? 1 : value;
-      return clamp(base * factor, MIN_PADDING, MAX_PADDING);
+      // When padding is 0, use an initial value based on zoom direction
+      // This provides a more intuitive zooming experience:
+      // - Zoom in: start from a positive initial value (adds padding)
+      // - Zoom out: start from a negative initial value (reduces viewbox)
+      const baseValue =
+        value === 0
+          ? isZoomIn
+            ? INITIAL_PADDING_WHEN_ZERO
+            : -INITIAL_PADDING_WHEN_ZERO
+          : value;
+      return clamp(baseValue * factor, MIN_PADDING, MAX_PADDING);
     });
 
     const [top, right, bottom, left] = scaled;
