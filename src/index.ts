@@ -10,7 +10,14 @@ export {
   SelectHighlight,
   ZoomWheel,
 } from './editor/interactions';
-export { EditBar, Plugin, ResizeElement } from './editor/plugins';
+export {
+  cleanupReactEditBar,
+  createCommandHelpers,
+  createReactEditBar,
+  EditBar,
+  Plugin,
+  ResizeElement,
+} from './editor/plugins';
 export { exportToSVG } from './exporter';
 export {
   Defs,
@@ -45,13 +52,31 @@ export {
 } from './renderer';
 export { loadSVGResource, registerResourceLoader } from './resource';
 export { Infographic } from './runtime';
+export type {
+  InfographicChangeEvent,
+  InfographicEventCallbacks,
+  InfographicEventMap,
+  InfographicGeometryChangeEvent,
+  InfographicHistoryChangeEvent,
+  InfographicLoadedEvent,
+  InfographicRenderedEvent,
+  InfographicSelectionChangeEvent,
+} from './runtime/events';
 export { parseSyntax } from './syntax';
 export { getTemplate, getTemplates, registerTemplate } from './templates';
 export { getTheme, getThemes, registerTheme } from './themes';
 export { parseSVG, setFontExtendFactor } from './utils';
 export { VERSION } from './version';
 
-export type { EditBarOptions } from './editor';
+export type {
+  CustomEditItem,
+  EditBarCommandHelpers,
+  EditBarContext,
+  EditBarItemConfig,
+  EditBarOptions,
+  EditBarRenderer,
+  SelectionType,
+} from './editor';
 export type {
   ExportOptions,
   PNGExportOptions,

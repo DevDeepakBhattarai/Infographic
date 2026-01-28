@@ -1,5 +1,11 @@
 import EventEmitter from 'eventemitter3';
-import { Editor, type IEditor } from '../editor';
+import {
+  Editor,
+  type HistoryChangePayload,
+  type IEditor,
+  type SelectionChangePayload,
+  type StateChangePayload,
+} from '../editor';
 import {
   exportToPNGString,
   exportToSVGString,
@@ -16,6 +22,13 @@ import { waitForSvgLoads } from '../resource';
 import { parseSyntax, type SyntaxError } from '../syntax';
 import { IEventEmitter } from '../types';
 import { getTypes, parseSVG } from '../utils';
+import type {
+  InfographicChangeEvent,
+  InfographicEventMap,
+  InfographicGeometryChangeEvent,
+  InfographicHistoryChangeEvent,
+  InfographicSelectionChangeEvent,
+} from './events';
 import { DEFAULT_OPTIONS } from './options';
 import {
   cloneOptions,
@@ -112,6 +125,7 @@ export class Infographic {
     this.editor = undefined;
     if (this.options.editable) {
       this.editor = new Editor(this.emitter, this.node, parsedOptions);
+      this.setupEditorEventBridge();
     }
 
     this.rendered = true;
@@ -186,12 +200,108 @@ export class Infographic {
     return await exportToPNGString(this.node, options);
   }
 
+  /**
+   * Subscribe to an event
+   * @param event Event name
+   * @param listener Event handler
+   */
+  on<K extends keyof InfographicEventMap>(
+    event: K,
+    listener: (payload: InfographicEventMap[K]) => void,
+  ): void;
+  on(event: string, listener: (...args: any[]) => void): void;
   on(event: string, listener: (...args: any[]) => void) {
     this.emitter.on(event, listener);
   }
 
+  /**
+   * Unsubscribe from an event
+   * @param event Event name
+   * @param listener Event handler to remove
+   */
+  off<K extends keyof InfographicEventMap>(
+    event: K,
+    listener: (payload: InfographicEventMap[K]) => void,
+  ): void;
+  off(event: string, listener: (...args: any[]) => void): void;
   off(event: string, listener: (...args: any[]) => void) {
     this.emitter.off(event, listener);
+  }
+
+  /**
+   * Setup event bridging from internal editor events to public events
+   */
+  private setupEditorEventBridge() {
+    // Bridge options:change to public 'change' event
+    this.emitter.on('options:change', (payload: StateChangePayload) => {
+      const change = payload.changes[0];
+      if (!change) return;
+
+      const publicEvent: InfographicChangeEvent = {
+        operation: change.op,
+        path: change.path,
+        value: change.value,
+        options: this.getOptions(),
+      };
+      this.emitter.emit('change', publicEvent);
+
+      // Call callback prop if provided
+      const { onChange } = this.options as InfographicOptions;
+      if (onChange) {
+        onChange(publicEvent);
+      }
+    });
+
+    // Bridge selection:change to public 'selectionChange' event
+    this.emitter.on('selection:change', (payload: SelectionChangePayload) => {
+      const publicEvent: InfographicSelectionChangeEvent = {
+        selection: payload.next,
+        added: payload.added,
+        removed: payload.removed,
+      };
+      this.emitter.emit('selectionChange', publicEvent);
+
+      // Call callback prop if provided
+      const { onSelectionChange } = this.options as InfographicOptions;
+      if (onSelectionChange) {
+        onSelectionChange(publicEvent);
+      }
+    });
+
+    // Bridge history:change to public 'historyChange' event
+    this.emitter.on('history:change', (payload: HistoryChangePayload) => {
+      const publicEvent: InfographicHistoryChangeEvent = {
+        action: payload.action,
+        canUndo: this.editor?.canUndo() ?? false,
+        canRedo: this.editor?.canRedo() ?? false,
+        historySize: this.editor?.getHistorySize() ?? 0,
+      };
+      this.emitter.emit('historyChange', publicEvent);
+
+      // Call callback prop if provided
+      const { onHistoryChange } = this.options as InfographicOptions;
+      if (onHistoryChange) {
+        onHistoryChange(publicEvent);
+      }
+    });
+
+    // Bridge selection:geometrychange to public 'geometryChange' event
+    this.emitter.on(
+      'selection:geometrychange',
+      (payload: { type: 'selection:geometrychange'; target: any }) => {
+        const publicEvent: InfographicGeometryChangeEvent = {
+          target: payload.target,
+          changeType: 'move', // Default to move, could be enhanced
+        };
+        this.emitter.emit('geometryChange', publicEvent);
+
+        // Call callback prop if provided
+        const { onGeometryChange } = this.options as InfographicOptions;
+        if (onGeometryChange) {
+          onGeometryChange(publicEvent);
+        }
+      },
+    );
   }
 
   destroy() {

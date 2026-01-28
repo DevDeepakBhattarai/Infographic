@@ -68,6 +68,18 @@ export class Editor implements IEditor {
     return this.document;
   }
 
+  canUndo() {
+    return this.commander.canUndo();
+  }
+
+  canRedo() {
+    return this.commander.canRedo();
+  }
+
+  getHistorySize() {
+    return this.commander.getHistorySize();
+  }
+
   destroy() {
     this.document.style.userSelect = '';
     this.interaction.destroy();

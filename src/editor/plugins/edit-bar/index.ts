@@ -1,5 +1,7 @@
 export { ColorPicker, Popover, Select } from './components';
+export { createCommandHelpers } from './command-helpers';
 export { EditBar } from './edit-bar';
+export { cleanupReactEditBar, createReactEditBar } from './react-adapter';
 
 export type {
   ColorPickerHandle,
@@ -15,4 +17,12 @@ export type {
   SelectProps,
   SelectValue,
 } from './components';
-export type { EditBarOptions } from './edit-bar';
+export type {
+  CustomEditItem,
+  EditBarCommandHelpers,
+  EditBarContext,
+  EditBarItemConfig,
+  EditBarOptions,
+  EditBarRenderer,
+  SelectionType,
+} from './types';

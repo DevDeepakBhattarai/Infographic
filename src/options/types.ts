@@ -1,9 +1,10 @@
 import type { DesignOptions, ParsedDesignsOptions } from '../designs';
 import type { ElementProps, IInteraction, IPlugin } from '../editor';
+import type { InfographicEventCallbacks } from '../runtime/events';
 import type { ThemeConfig } from '../themes';
 import type { Data, Padding, ParsedData } from '../types';
 
-export interface InfographicOptions {
+export interface InfographicOptions extends InfographicEventCallbacks {
   /** 容器，可以是选择器或者 HTMLElement */
   container?: string | HTMLElement;
   /** 宽度 */

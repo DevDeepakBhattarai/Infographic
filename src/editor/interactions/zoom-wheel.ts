@@ -60,10 +60,12 @@ export class ZoomWheel extends Interaction implements IInteraction {
 
   init(options: InteractionInitOptions) {
     super.init(options);
-    document.addEventListener('wheel', this.wheelListener, { passive: false });
+    const svg = this.editor.getDocument();
+    svg.addEventListener('wheel', this.wheelListener, { passive: false });
   }
 
   destroy() {
-    document.removeEventListener('wheel', this.wheelListener);
+    const svg = this.editor.getDocument();
+    svg.removeEventListener('wheel', this.wheelListener);
   }
 }

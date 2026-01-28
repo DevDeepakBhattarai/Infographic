@@ -17,6 +17,7 @@ import type {
   SelectionChangePayload,
 } from '../../types';
 import { Plugin } from '../base';
+import { createCommandHelpers } from './command-helpers';
 import {
   ElementAlign,
   FontAlign,
@@ -25,12 +26,13 @@ import {
   FontSize,
   IconColor,
 } from './edit-items';
-
-export interface EditBarOptions {
-  style?: Partial<CSSStyleDeclaration>;
-  className?: string;
-  getContainer?: HTMLElement | (() => HTMLElement);
-}
+import { cleanupReactEditBar } from './react-adapter';
+import type {
+  CustomEditItem,
+  EditBarContext,
+  EditBarOptions,
+  SelectionType,
+} from './types';
 
 type EditItem = HTMLElement;
 
@@ -61,18 +63,47 @@ export class EditBar extends Plugin implements IPlugin {
 
   private handleSelectionChanged = ({ next }: SelectionChangePayload) => {
     this.selection = next;
+
+    // Apply filter if provided
+    if (this.options?.filter && !this.options.filter(next)) {
+      if (this.container) hideContainer(this.container);
+      return;
+    }
+
     if (next.length === 0) {
       if (this.container) hideContainer(this.container);
       return;
     }
+
+    // Build context for custom rendering
+    const context = this.buildContext(next);
+
+    // Use custom render if provided
+    if (this.options?.render) {
+      const customContent = this.options.render(context);
+      if (!customContent) {
+        if (this.container) hideContainer(this.container);
+        return;
+      }
+      const container = this.getOrCreateEditBar();
+      // Cleanup previous React content if any
+      cleanupContainerItems(container);
+      setContainerItems(container, [customContent]);
+      this.placeEditBar(container, next);
+      showContainer(container);
+      return;
+    }
+
+    // Otherwise use item-based approach
     const container = this.getOrCreateEditBar();
-    const items = this.getEditItems(next);
+    const items = this.getEditItems(next, context);
 
     if (items.length === 0) {
       hideContainer(container);
       return;
     }
 
+    cleanupContainerItems(container);
     setContainerItems(container, items);
 
     this.placeEditBar(container, next);
@@ -85,7 +116,7 @@ export class EditBar extends Plugin implements IPlugin {
     type: 'selection:geometrychange';
     target: Selection[number];
   }) => {
-    if (!this.selection.includes(target) || !this.container) return;
+    if (this.selection.indexOf(target) === -1 || !this.container) return;
     this.placeEditBar(this.container, this.selection);
     showContainer(this.container);
   };
@@ -96,7 +127,55 @@ export class EditBar extends Plugin implements IPlugin {
     showContainer(this.container);
   };
 
-  protected getEditItems(selection: Selection) {
+  /**
+   * Build context object for custom edit bar items and renderers.
+   */
+  private buildContext(selection: Selection): EditBarContext {
+    const attrs = this.getSelectionAttributes(selection);
+    return {
+      selection,
+      attributes: attrs,
+      commander: this.commander,
+      state: this.state,
+      commands: createCommandHelpers(this.commander),
+    };
+  }
+
+  /**
+   * Get merged attributes from the current selection.
+   */
+  private getSelectionAttributes(selection: Selection): Record<string, any> {
+    if (selection.length === 0) return {};
+
+    const selectionType = this.getSelectionType(selection);
+
+    if (selectionType === 'text') {
+      if (selection.length === 1) {
+        return getTextElementProps(selection[0] as TextElement).attributes || {};
+      }
+      return getCommonAttrs(
+        selection.map(
+          (text) => getTextElementProps(text as TextElement).attributes || {},
+        ),
+      );
+    }
+
+    if (selectionType === 'icon') {
+      if (selection.length === 1) {
+        return getIconAttrs(selection[0] as IconElement);
+      }
+      return getCommonAttrs(
+        selection.map((icon) => getIconAttrs(icon as IconElement)),
+      );
+    }
+
+    return {};
+  }
+
+  /**
+   * Determine the type of the current selection.
+   */
+  private getSelectionType(selection: Selection): SelectionType {
     let hasText = false;
     let hasIcon = false;
     let hasGeometry = false;
@@ -108,32 +187,91 @@ export class EditBar extends Plugin implements IPlugin {
 
       if (hasText && hasIcon && hasGeometry) break;
     }
-    // Only text
-    if (hasText && !hasIcon && !hasGeometry) {
-      if (selection.length === 1) {
-        return this.getTextEditItems(selection[0] as TextElement);
-      } else {
+
+    if (hasText && !hasIcon && !hasGeometry) return 'text';
+    if (!hasText && hasIcon && !hasGeometry) return 'icon';
+    if (!hasText && !hasIcon && hasGeometry) return 'geometry';
+    return 'mixed';
+  }
+
+  /**
+   * Render custom items from factory functions.
+   */
+  private renderCustomItems(
+    factories: CustomEditItem[],
+    context: EditBarContext,
+  ): HTMLElement[] {
+    return factories
+      .map((factory) => factory(context))
+      .filter((item): item is HTMLElement => item !== null);
+  }
+
+  protected getEditItems(
+    selection: Selection,
+    context?: EditBarContext,
+  ): EditItem[] {
+    const { items: itemConfig, includeDefaults = true } = this.options || {};
+    const selectionType = this.getSelectionType(selection);
+
+    // Build context if not provided
+    const ctx = context || this.buildContext(selection);
+
+    let items: EditItem[] = [];
+
+    // Add prepend items
+    if (itemConfig?.prepend) {
+      items.push(...this.renderCustomItems(itemConfig.prepend, ctx));
+    }
+
+    // Add default items if enabled
+    if (includeDefaults) {
+      items.push(...this.getDefaultItems(selection, selectionType));
+    }
+
+    // Add type-specific custom items
+    const typeItems = itemConfig?.[selectionType];
+    if (typeItems) {
+      items.push(...this.renderCustomItems(typeItems, ctx));
+    }
+
+    // Add append items
+    if (itemConfig?.append) {
+      items.push(...this.renderCustomItems(itemConfig.append, ctx));
+    }
+
+    return items.filter(Boolean);
+  }
+
+  /**
+   * Get default edit items based on selection type.
+   */
+  private getDefaultItems(
+    selection: Selection,
+    selectionType: SelectionType,
+  ): EditItem[] {
+    switch (selectionType) {
+      case 'text':
+        if (selection.length === 1) {
+          return this.getTextEditItems(selection[0] as TextElement);
+        }
         return this.getTextCollectionEditItems(selection as TextElement[]);
-      }
-    }
-    // Only icon
-    if (!hasText && hasIcon && !hasGeometry) {
-      if (selection.length === 1) {
-        return this.getIconEditItems(selection);
-      } else {
+
+      case 'icon':
+        if (selection.length === 1) {
+          return this.getIconEditItems(selection);
+        }
         return this.getIconCollectionEditItems(selection);
-      }
-    }
-    // Only geometry
-    if (!hasText && !hasIcon && hasGeometry) {
-      if (selection.length === 1) {
-        return this.getGeometryEditItems(selection);
-      } else {
+
+      case 'geometry':
+        if (selection.length === 1) {
+          return this.getGeometryEditItems(selection);
+        }
         return this.getGeometryCollectionEditItems(selection);
-      }
+
+      case 'mixed':
+      default:
+        return this.getElementCollectionEditItems(selection);
     }
-    // Mixed or multiple elements
-    return this.getElementCollectionEditItems(selection);
   }
 
   protected getOrCreateEditBar() {
@@ -312,5 +450,17 @@ function setContainerItems(container: HTMLDivElement, items: EditItem[]) {
   container.innerHTML = '';
   items.forEach((node) => {
     container.appendChild(node);
+  });
+}
+
+/**
+ * Cleanup container items, including React-rendered content.
+ */
+function cleanupContainerItems(container: HTMLDivElement) {
+  // Cleanup React-rendered items
+  Array.from(container.children).forEach((child) => {
+    if (child instanceof HTMLElement) {
+      cleanupReactEditBar(child);
+    }
   });
 }
